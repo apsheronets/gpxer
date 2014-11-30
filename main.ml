@@ -181,6 +181,11 @@ let () =
   let out = !out in
   let osm_base_url = !osm_base_url in
 
+  let basedir = Filename.dirname (Sys.argv.(0)) in
+  let start_icon = basedir ^ "/../share/gpxer/pin-icon-start.png" in
+  let end_icon = basedir ^ "/../share/gpxer/pin-icon-end.png" in
+  let shadow = basedir ^ "/../share/gpxer/pin-shadow.png" in
+
   printf "parsing gpx file\n%!";
   let gpx = gpx_of_channel stdin in
   (*print_gpx gpx;*)
@@ -252,13 +257,25 @@ let () =
     Magick.Imper.composite_image image tile_image ~compose:Magick.Over ~x ~y ());
   printf "removing temporary directory %s\n%!" tmp_dir;
   ignore (Sys.command (sprintf "rm -r %s" tmp_dir));
+  let start_icon  = Magick.read_image ~filename:start_icon in
+  let end_icon    = Magick.read_image ~filename:end_icon   in
+  let shadow      = Magick.read_image ~filename:shadow     in
+  let draw_icon icon (lat, lon) =
+    let x = int_of_float @@ x_pixel_of_lon zoom lon -. canvas_left in
+    let y = int_of_float @@ y_pixel_of_lat zoom lat -. canvas_top in
+    let icon_width  = Magick.get_image_width  icon in
+    let icon_height = Magick.get_image_height icon in
+    let x = x - (icon_width / 2) in
+    let y = y - icon_height + 5 (* a magic five *) in
+    Magick.Imper.composite_image image icon ~compose:Magick.Over ~x ~y ();
+    Magick.Imper.composite_image image shadow ~compose:Magick.Over ~x ~y () in
   gpx |>
     List.iter @@
       List.iter
         (fun trkseg ->
           let rec travel (lat0, lon0) rest =
             match rest with
-            | [] -> ();
+            | [] -> (lat0, lon0);
             | (lat1, lon1)::t ->
                 let x0 = int_of_float @@ x_pixel_of_lon zoom lon0 -. canvas_left in
                 let x1 = int_of_float @@ x_pixel_of_lon zoom lon1 -. canvas_left in
@@ -272,13 +289,17 @@ let () =
                   ~y1
                   ~fill_color:(Magick.Imper.color_of_string "#4e5fcd")
                   ~stroke_color:(Magick.Imper.color_of_string "#4e5fcd")
-                  ~stroke_width:5.0
+                  ~stroke_width:4.0
                   ~stroke_antialias:Magick.MagickTrue
                   ~line_cap:Magick.Imper.RoundCap
                   ();
                 travel (lat1, lon1) t in
           match trkseg with
-          | h::t -> travel h t
+          | first::rest ->
+              draw_icon start_icon first;
+              let last = travel first rest in
+              draw_icon end_icon last;
+              ()
           | _ -> ()); (* FIXME in the future*)
   printf "writing to %s\n%!" out;
   Magick.write_image image out;

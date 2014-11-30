@@ -16,12 +16,15 @@ endif
 OBJS    = $(FILES:.ml=.cmo)
 OPTOBJS = $(FILES:.ml=.cmx)
 
-all: $(NAME) $(NAME).opt
+BYTE = bin/$(NAME)
+OPT = bin/$(NAME).opt
 
-$(NAME): $(OBJS)
+all: $(BYTE) $(OPT)
+
+$(BYTE): $(OBJS)
 	$(CAMLC) -linkpkg -o $@ $^
 
-$(NAME).opt: $(OPTBJS)
+$(OPT): $(OPTBJS)
 	$(CAMLOPT) -linkpkg -o $@ $^
 
 .SUFFIXES:
@@ -34,16 +37,20 @@ $(NAME).opt: $(OPTBJS)
 .ml.cmx:
 	$(CAMLOPT) $(PP) -c $<
 
-install: $(NAME)
-	install -m 755 $(NAME) $(PREFIX)/bin/$(NAME)
+install: $(BYTE) $(OPT)
+	install -m 755 $(BYTE) $(PREFIX)/$(BYTE)
+	install -m 755 $(OPT)  $(PREFIX)/$(OPT)
+	install -m 755 share/$(NAME) $(PREFIX)/share/$(NAME)
 
 uninstall:
-	rm $(PREFIX)/bin/$(NAME)
+	rm $(PREFIX)/$(BYTE)
+	rm $(PREFIX)/$(OPT)
+	rm -r $(PREFIX)/share/$(NAME)
 
 clean:
 	-rm -f *.cm[ioxa] *.cmx[as] *.o *.a *~
 	-rm -f .depend
-	-rm -f $(NAME) $(NAME).opt
+	-rm -f $(BYTE) $(OPT)
 
 depend: .depend
 
