@@ -157,11 +157,33 @@ type tile = {
   file: string;
 }
 
+open Arg
+
 let () =
+  let help =
+    "gpxer - GPX to PNG tool\n" ^
+    "usage: gpxer [OPTIONS] < /path/to/gpx/file.gpx\n" in
+  let out = ref "out.png" in
+  let canvas_height = ref 600 in
+  let canvas_width = ref 800 in
+  let osm_base_url = ref "http://{s}.tile.opencyclemap.org/landscape/{z}/{x}/{y}.png" in
+  let source = ref "" in
+  let l = [
+    "-o", Set_string out, sprintf "FILE\twrite output to <file>; default is %S" !out;
+    "-height", Set_int canvas_height, sprintf "\timage height; default is %d" !canvas_height;
+    "-width", Set_int canvas_width, sprintf "\timage width; default is %d" !canvas_width;
+    "-url", Set_string osm_base_url, sprintf "\t\tURL to download tiles from;\n\t\tdefault is %s" !osm_base_url;
+  ] in
+  Arg.parse l (fun a -> source := a) help;
+
+  let canvas_height = !canvas_height in
+  let canvas_width  = !canvas_width  in
+  let out = !out in
+  let osm_base_url = !osm_base_url in
+
+  printf "parsing gpx file\n%!";
   let gpx = gpx_of_channel stdin in
   (*print_gpx gpx;*)
-  let canvas_height = 350 in
-  let canvas_width  = 350 in
   let min_lat = min_lat gpx in
   let max_lat = max_lat gpx in
   let min_lon = min_lon gpx in
@@ -190,11 +212,9 @@ let () =
   let bottom_tile = bottom_tile zoom canvas_bottom in
   let left_tile = left_tile zoom canvas_left in
   let right_tile = right_tile zoom canvas_right in
-  printf "top left tile:     http://tile.localhost/landscape/%d/%d/%d.png\n" zoom left_tile top_tile;
-  printf "bottom right tile: http://tile.localhost/landscape/%d/%d/%d.png\n" zoom right_tile bottom_tile;
-  let osm_base_url = "http://tile.localhost/landscape/{z}/{x}/{y}.png" in
   let osm_url zoom x y =
     let str = osm_base_url in
+    let _, str = ExtLib.String.replace ~str ~sub:"{s}" ~by:"a" (* FIXME in the future *) in
     let _, str = ExtLib.String.replace ~str ~sub:"{z}" ~by:(string_of_int zoom) in
     let _, str = ExtLib.String.replace ~str ~sub:"{x}" ~by:(string_of_int x   ) in
     let _, str = ExtLib.String.replace ~str ~sub:"{y}" ~by:(string_of_int y   ) in
@@ -260,7 +280,6 @@ let () =
           match trkseg with
           | h::t -> travel h t
           | _ -> ()); (* FIXME in the future*)
-  let out = "out.png" in
   printf "writing to %s\n%!" out;
   Magick.write_image image out;
   ()
