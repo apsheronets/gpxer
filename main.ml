@@ -1,4 +1,6 @@
 
+open Printf
+
 let (|>) f g = g f (* default in OCaml 4.01 *)
 let (@@) f x = f x
 
@@ -149,6 +151,12 @@ let left_tile zoom canvas_left =
 let right_tile zoom canvas_right =
   int_of_float (canvas_right /. float_of_int tile_width)
 
+type tile = {
+  x: int;
+  y: int;
+  file: string;
+}
+
 let () =
   let gpx = gpx_of_channel stdin in
   print_gpx gpx;
@@ -181,5 +189,39 @@ let () =
   let top_tile = top_tile zoom canvas_top in
   let bottom_tile = bottom_tile zoom canvas_bottom in
   let left_tile = left_tile zoom canvas_left in
-  Printf.printf "top left tile: http://tile.localhost/landscape/%d/%d/%d.png\n" zoom left_tile top_tile;
+  let right_tile = right_tile zoom canvas_right in
+  Printf.printf "top left tile:     http://tile.localhost/landscape/%d/%d/%d.png\n" zoom left_tile top_tile;
+  Printf.printf "bottom right tile: http://tile.localhost/landscape/%d/%d/%d.png\n" zoom right_tile bottom_tile;
+  let osm_base_url = "http://tile.localhost/landscape/{z}/{x}/{y}.png" in
+  let osm_url zoom x y =
+    let str = osm_base_url in
+    let _, str = ExtLib.String.replace ~str ~sub:"{z}" ~by:(string_of_int zoom) in
+    let _, str = ExtLib.String.replace ~str ~sub:"{x}" ~by:(string_of_int x   ) in
+    let _, str = ExtLib.String.replace ~str ~sub:"{y}" ~by:(string_of_int y   ) in
+    str in
+  let tmp_dir =
+    Random.self_init ();
+    let rand = Random.int 1073741823 in
+    sprintf "/tmp/gpxer-%d" rand in
+  let tiles =
+    let rec xloop x acc =
+      let rec yloop y acc =
+        if y > bottom_tile
+        then acc
+        else
+          let dir = sprintf "%s/%d/%d" tmp_dir zoom x in
+          let file = sprintf "%s/%d.png" dir y in
+          let url = osm_url zoom x y in
+          ignore (Sys.command (sprintf "mkdir -p %s" dir));
+          printf "download tile %s\n%!" url;
+          ignore (Sys.command (sprintf "curl -s %s -o %s" url file));
+          let tile = { file; x; y } in
+          yloop (succ y) (tile :: acc) in
+      if x > right_tile
+      then acc
+      else
+        let column = yloop top_tile [] in
+        xloop (succ x) (List.rev_append column acc) in
+    xloop left_tile [] in
+  ()
 
