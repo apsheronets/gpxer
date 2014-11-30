@@ -50,7 +50,7 @@ let print_gpx =
   List.iter
     (List.iter
       (List.iter
-        (fun (lat, lon) -> Printf.printf "(%f, %f)\n" lat lon)))
+        (fun (lat, lon) -> printf "(%f, %f)\n" lat lon)))
 
 let tile_width = 256
 let tile_height = 256
@@ -80,21 +80,21 @@ let max_lon =
 
 let calc_zoom lat_min lat_max lon_min lon_max width height =
   let zoom_to_fit_width = int_of_float (floor (Math.log2(float_of_int (360 * width) /. (float_of_int tile_width *. (lon_max -. lon_min))))) in
-  Printf.printf "Calculated maximum zoom to fit width %d\n" zoom_to_fit_width;
+  printf "calculated maximum zoom to fit width:  %d\n" zoom_to_fit_width;
   let zoom_to_fit_height = int_of_float (floor (Math.log2 (float_of_int height /. (float_of_int tile_height *. (log (tan (lat_max *. (Constant.pi /. 180.0)) +. (1.0 /. cos (lat_max *. (Constant.pi /. 180.0)))) -. log (tan (lat_min *. (Constant.pi /. 180.0)) +. (1.0 /. cos(lat_min *. (Constant.pi /. 180.0))))) /. Constant.pi))) +. 1.) in
-  Printf.printf "Calculated maximum zoom to fit height %d\n" zoom_to_fit_height;
+  printf "calculated maximum zoom to fit height: %d\n" zoom_to_fit_height;
   let zoom =
     if zoom_to_fit_width < zoom_to_fit_height
     then zoom_to_fit_width
     else zoom_to_fit_height in
-  Printf.printf "Calculated minimum zoom %d\n" zoom;
+  printf "calculated minimum zoom: %d\n" zoom;
   if zoom > 18
   then (* in case we got one meter GPX *)
-    (Printf.printf "Zoom is too high, choose 18\n";
+    (printf "zoom is too high, choose 18\n";
     18)
   else if zoom < 0
   then
-    (Printf.printf "Zoom is too low, choose 0";
+    (printf "zoom is too low, choose 0";
     0)
   else
     zoom
@@ -159,7 +159,7 @@ type tile = {
 
 let () =
   let gpx = gpx_of_channel stdin in
-  print_gpx gpx;
+  (*print_gpx gpx;*)
   let canvas_height = 350 in
   let canvas_width  = 350 in
   let min_lat = min_lat gpx in
@@ -175,23 +175,23 @@ let () =
       canvas_height
       canvas_width in
   let gpx_height = gpx_height_in_pixels zoom min_lat max_lat in
-  Printf.printf "gpx height: %f\n" gpx_height;
+  printf "gpx height: %f\n" gpx_height;
   let gpx_width  = gpx_width_in_pixels zoom min_lon max_lon in
-  Printf.printf "gpx width:  %f\n" gpx_width;
+  printf "gpx width:  %f\n" gpx_width;
   let canvas_top = canvas_top canvas_height gpx_height zoom max_lat in
-  Printf.printf "canvas top:    %f\n" canvas_top;
+  printf "canvas top:    %f\n" canvas_top;
   let canvas_bottom = canvas_bottom canvas_height gpx_height zoom min_lat in
-  Printf.printf "canvas bottom: %f\n" canvas_bottom;
+  printf "canvas bottom: %f\n" canvas_bottom;
   let canvas_left = canvas_left canvas_width gpx_width zoom min_lon in
-  Printf.printf "canvas left:   %f\n" canvas_left;
+  printf "canvas left:   %f\n" canvas_left;
   let canvas_right = canvas_right canvas_width gpx_width zoom max_lon in
-  Printf.printf "canvas right:  %f\n" canvas_right;
+  printf "canvas right:  %f\n" canvas_right;
   let top_tile = top_tile zoom canvas_top in
   let bottom_tile = bottom_tile zoom canvas_bottom in
   let left_tile = left_tile zoom canvas_left in
   let right_tile = right_tile zoom canvas_right in
-  Printf.printf "top left tile:     http://tile.localhost/landscape/%d/%d/%d.png\n" zoom left_tile top_tile;
-  Printf.printf "bottom right tile: http://tile.localhost/landscape/%d/%d/%d.png\n" zoom right_tile bottom_tile;
+  printf "top left tile:     http://tile.localhost/landscape/%d/%d/%d.png\n" zoom left_tile top_tile;
+  printf "bottom right tile: http://tile.localhost/landscape/%d/%d/%d.png\n" zoom right_tile bottom_tile;
   let osm_base_url = "http://tile.localhost/landscape/{z}/{x}/{y}.png" in
   let osm_url zoom x y =
     let str = osm_base_url in
@@ -213,7 +213,7 @@ let () =
           let file = sprintf "%s/%d.png" dir y in
           let url = osm_url zoom x y in
           ignore (Sys.command (sprintf "mkdir -p %s" dir));
-          printf "download tile %s\n%!" url;
+          printf "downloading tile %s\n%!" url;
           ignore (Sys.command (sprintf "curl -s %s -o %s" url file));
           let tile = { file; x; y } in
           yloop (succ y) (tile :: acc) in
@@ -223,5 +223,45 @@ let () =
         let column = yloop top_tile [] in
         xloop (succ x) (List.rev_append column acc) in
     xloop left_tile [] in
+  let image = Magick.get_canvas ~width:canvas_width ~height:canvas_height ~color:"#000000" in
+  Magick.Imper.set_image_type image Magick.Palette;
+  tiles |> List.iter (fun tile ->
+    let tile_image = Magick.read_image ~filename:tile.file in
+    let x = (tile.x * tile_width)  - int_of_float (floor canvas_left) in
+    let y = (tile.y * tile_height) - int_of_float (floor canvas_top ) in
+    Magick.Imper.composite_image image tile_image ~compose:Magick.Over ~x ~y ());
+  printf "removing temporary directory %s\n%!" tmp_dir;
+  ignore (Sys.command (sprintf "rm -r %s" tmp_dir));
+  gpx |>
+    List.iter @@
+      List.iter
+        (fun trkseg ->
+          let rec travel (lat0, lon0) rest =
+            match rest with
+            | [] -> ();
+            | (lat1, lon1)::t ->
+                let x0 = int_of_float @@ x_pixel_of_lon zoom lon0 -. canvas_left in
+                let x1 = int_of_float @@ x_pixel_of_lon zoom lon1 -. canvas_left in
+                let y0 = int_of_float @@ y_pixel_of_lat zoom lat0 -. canvas_top in
+                let y1 = int_of_float @@ y_pixel_of_lat zoom lat1 -. canvas_top in
+                Magick.Imper.draw_line
+                  image
+                  ~x0
+                  ~x1
+                  ~y0
+                  ~y1
+                  ~fill_color:(Magick.Imper.color_of_string "#4e5fcd")
+                  ~stroke_color:(Magick.Imper.color_of_string "#4e5fcd")
+                  ~stroke_width:5.0
+                  ~stroke_antialias:Magick.MagickTrue
+                  ~line_cap:Magick.Imper.RoundCap
+                  ();
+                travel (lat1, lon1) t in
+          match trkseg with
+          | h::t -> travel h t
+          | _ -> ()); (* FIXME in the future*)
+  let out = "out.png" in
+  printf "writing to %s\n%!" out;
+  Magick.write_image image out;
   ()
 
