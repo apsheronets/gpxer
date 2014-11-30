@@ -105,11 +105,11 @@ let x_pixel_of_lon zoom lon =
   ((lon +. 180.) /. 360.) *. (2. ** float_of_int zoom) *. float_of_int tile_width
 
 let y_tile_of_lat zoom lat =
-  int_of_float ((1.0 -. (log (tan (lat *. (Constant.pi /. 180.)) +. (1. /. cos (lat *. (Constant.pi /. 180.)))) /. Constant.pi)) *. (2. ** float_of_int (zoom - 1)))
+  int_of_float ((1.0 -. (log (tan (lat *. (Constant.pi /. 180.)) +. (1. /. cos (lat *. (Constant.pi /. 180.))))) /. Constant.pi) *. (2. ** float_of_int (zoom - 1)))
 
 (* on global map *)
 let y_pixel_of_lat zoom lat =
-  (1.0 -. (log (tan (lat *. (Constant.pi /. 180.)) +. (1. /. cos (lat *. (Constant.pi /. 180.)))) /. Constant.pi)) *. (2. ** float_of_int (zoom - 1)) *. float_of_int tile_height
+  (1.0 -. (log (tan (lat *. (Constant.pi /. 180.)) +. (1. /. cos (lat *. (Constant.pi /. 180.))))) /. Constant.pi) *. (2. ** float_of_int (zoom - 1)) *. float_of_int tile_height
 
 let gpx_height_in_pixels zoom min_lat max_lat =
   let min_height = y_pixel_of_lat zoom min_lat in
@@ -171,10 +171,15 @@ let () =
   let gpx_width  = gpx_width_in_pixels zoom min_lon max_lon in
   Printf.printf "gpx width:  %f\n" gpx_width;
   let canvas_top = canvas_top canvas_height gpx_height zoom max_lat in
-  Printf.printf "canvas top:  %f\n" canvas_top;
+  Printf.printf "canvas top:    %f\n" canvas_top;
+  let canvas_bottom = canvas_bottom canvas_height gpx_height zoom min_lat in
+  Printf.printf "canvas bottom: %f\n" canvas_bottom;
   let canvas_left = canvas_left canvas_width gpx_width zoom min_lon in
-  Printf.printf "canvas left: %f\n" canvas_left;
+  Printf.printf "canvas left:   %f\n" canvas_left;
+  let canvas_right = canvas_right canvas_width gpx_width zoom max_lon in
+  Printf.printf "canvas right:  %f\n" canvas_right;
   let top_tile = top_tile zoom canvas_top in
+  let bottom_tile = bottom_tile zoom canvas_bottom in
   let left_tile = left_tile zoom canvas_left in
   Printf.printf "top left tile: http://tile.localhost/landscape/%d/%d/%d.png\n" zoom left_tile top_tile;
 
