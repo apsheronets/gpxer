@@ -58,6 +58,23 @@ let close_tag input =
       | _ -> loop lvl in
   loop 1
 
+let input_list_ignore_other input p =
+  let rec loop acc =
+    let signal = Xmlm.input input in
+    match signal with
+    | `El_end -> Parsed (List.rev acc)
+    | `Data s -> loop acc
+    | signal -> (
+        match p input signal with
+        | Parsed r -> loop (r::acc)
+        | Failed -> (
+            match signal with
+            | `El_start _ -> (close_tag input; loop acc)
+            | _ -> loop acc
+        )
+    ) in
+  loop []
+
 let expect_tag name p input (s:Xmlm.signal) =
   match s with
   | `El_start (((_, n), _) as tag) when n = name ->

@@ -20,11 +20,11 @@ let gpx_of_channel channel : gpx =
   let module Xml = Xmlm_shit in
   let r =
     Xml.find_tag "gpx" i @@
-      fun _ i -> Xml.input_list_ignore_data i @@
+      fun _ i -> Xml.input_list_ignore_other i @@
         Xml.expect_tag "trk" @@
-          fun _ i -> Xml.input_list_ignore_data i @@
+          fun _ i -> Xml.input_list_ignore_other i @@
             Xml.expect_tag "trkseg" @@
-              fun _ i -> Xml.input_list_ignore_data i @@
+              fun _ i -> Xml.input_list_ignore_other i @@
                 Xml.expect_tag "trkpt" @@
                   fun ((_, _), attrs) i ->
                     let lat =
