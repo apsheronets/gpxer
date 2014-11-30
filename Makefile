@@ -1,4 +1,4 @@
-PACKAGES = extlib,mathlib,curl,xmlm
+PACKAGES = extlib,mathlib,magick,xmlm
 FILES = xmlm_shit.ml main.ml
 
 NAME = gpxer
