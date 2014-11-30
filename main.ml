@@ -97,16 +97,84 @@ let calc_zoom lat_min lat_max lon_min lon_max width height =
   else
     zoom
 
+let x_tile_of_lon zoom lon =
+  int_of_float (((lon +. 180.) /. 360.) *. (2. ** float_of_int zoom))
+
+(* on global map *)
+let x_pixel_of_lon zoom lon =
+  ((lon +. 180.) /. 360.) *. (2. ** float_of_int zoom) *. float_of_int tile_width
+
+let y_tile_of_lat zoom lat =
+  int_of_float ((1.0 -. (log (tan (lat *. (Constant.pi /. 180.)) +. (1. /. cos (lat *. (Constant.pi /. 180.)))) /. Constant.pi)) *. (2. ** float_of_int (zoom - 1)))
+
+(* on global map *)
+let y_pixel_of_lat zoom lat =
+  (1.0 -. (log (tan (lat *. (Constant.pi /. 180.)) +. (1. /. cos (lat *. (Constant.pi /. 180.)))) /. Constant.pi)) *. (2. ** float_of_int (zoom - 1)) *. float_of_int tile_height
+
+let gpx_height_in_pixels zoom min_lat max_lat =
+  let min_height = y_pixel_of_lat zoom min_lat in
+  let max_height = y_pixel_of_lat zoom max_lat in
+  max_height -. min_height
+
+let gpx_width_in_pixels zoom min_lon max_lon =
+  let min_width = x_pixel_of_lon zoom min_lon in
+  let max_width = x_pixel_of_lon zoom max_lon in
+  max_width -. min_width
+
+let canvas_top canvas_height gpx_height zoom max_lat =
+  let vertical_padding = (float_of_int canvas_height -. gpx_height) /. 2. in
+  y_pixel_of_lat zoom max_lat -. vertical_padding
+
+let canvas_bottom canvas_height gpx_height zoom min_lat =
+  let vertical_padding = (float_of_int canvas_height -. gpx_height) /. 2. in
+  y_pixel_of_lat zoom min_lat +. vertical_padding
+
+let canvas_left canvas_width gpx_width zoom min_lon =
+  let horizontal_padding = (float_of_int canvas_width -. gpx_width) /. 2. in
+  x_pixel_of_lon zoom min_lon -. horizontal_padding
+
+let canvas_right canvas_width gpx_width zoom max_lon =
+  let horizontal_padding = (float_of_int canvas_width -. gpx_width) /. 2. in
+  x_pixel_of_lon zoom max_lon +. horizontal_padding
+
+let top_tile zoom canvas_top =
+  int_of_float (canvas_top /. float_of_int tile_height)
+
+let bottom_tile zoom canvas_bottom =
+  int_of_float (canvas_bottom /. float_of_int tile_height)
+
+let left_tile zoom canvas_left =
+  int_of_float (canvas_left /. float_of_int tile_width)
+
+let right_tile zoom canvas_right =
+  int_of_float (canvas_right /. float_of_int tile_width)
+
 let () =
   let gpx = gpx_of_channel stdin in
   print_gpx gpx;
-  ignore (
+  let canvas_height = 350 in
+  let canvas_width  = 350 in
+  let min_lat = min_lat gpx in
+  let max_lat = max_lat gpx in
+  let min_lon = min_lon gpx in
+  let max_lon = max_lon gpx in
+  let zoom =
     calc_zoom
-      (min_lat gpx)
-      (max_lat gpx)
-      (min_lon gpx)
-      (max_lon gpx)
-      300
-      300
-  )
+      min_lat
+      max_lat
+      min_lon
+      max_lon
+      canvas_height
+      canvas_width in
+  let gpx_height = gpx_width_in_pixels zoom min_lat max_lat in
+  Printf.printf "gpx height: %f\n" gpx_height;
+  let gpx_width  = gpx_width_in_pixels zoom min_lon max_lon in
+  Printf.printf "gpx width:  %f\n" gpx_width;
+  let canvas_top = canvas_top canvas_height gpx_height zoom max_lat in
+  Printf.printf "canvas top:  %f\n" canvas_top;
+  let canvas_left = canvas_left canvas_width gpx_width zoom min_lon in
+  Printf.printf "canvas left: %f\n" canvas_left;
+  let top_tile = top_tile zoom canvas_top in
+  let left_tile = left_tile zoom canvas_left in
+  Printf.printf "top left tile: http://tile.localhost/landscape/%d/%d/%d.png\n" zoom left_tile top_tile;
 
