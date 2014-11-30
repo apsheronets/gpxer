@@ -1,5 +1,5 @@
 PACKAGES = extlib,mathlib,curl,xmlm
-FILES = main.ml
+FILES = xmlm_shit.ml main.ml
 
 NAME = gpxer
 VERSION := $(shell head -n 1 VERSION)
