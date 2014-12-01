@@ -81,7 +81,9 @@ let max_lon =
 let calc_zoom lat_min lat_max lon_min lon_max width height =
   let zoom_to_fit_width = int_of_float (floor (Math.log2(float_of_int (360 * width) /. (float_of_int tile_width *. (lon_max -. lon_min))))) in
   printf "calculated maximum zoom to fit width:  %d\n" zoom_to_fit_width;
-  let zoom_to_fit_height = int_of_float (floor (Math.log2 (float_of_int height /. (float_of_int tile_height *. (log (tan (lat_max *. (Constant.pi /. 180.0)) +. (1.0 /. cos (lat_max *. (Constant.pi /. 180.0)))) -. log (tan (lat_min *. (Constant.pi /. 180.0)) +. (1.0 /. cos(lat_min *. (Constant.pi /. 180.0))))) /. Constant.pi))) +. 1.) in
+  let zoom_to_fit_height =
+    int_of_float @@
+    Math.log2 ((Constant.pi *. float_of_int height) /. ((float_of_int tile_height) *. (log (tan (lat_max *. (Constant.pi /. 180.)) +. (1. /. cos (lat_max *. (Constant.pi /. 180.)))) -. log (tan (lat_min *. (Constant.pi /. 180.)) +. (1. /. cos (lat_min *. (Constant.pi /. 180.))))))) +. 1.0 in
   printf "calculated maximum zoom to fit height: %d\n" zoom_to_fit_height;
   let zoom =
     if zoom_to_fit_width < zoom_to_fit_height
@@ -199,8 +201,8 @@ let () =
       max_lat
       min_lon
       max_lon
-      canvas_height
-      canvas_width in
+      canvas_width
+      canvas_height in
   let gpx_height = gpx_height_in_pixels zoom min_lat max_lat in
   printf "gpx height: %f\n" gpx_height;
   let gpx_width  = gpx_width_in_pixels zoom min_lon max_lon in
