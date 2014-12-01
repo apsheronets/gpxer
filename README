@@ -14,6 +14,7 @@ First you need to get:
 * imagemagick for OCaml (https://github.com/besport/ocaml-imagemagick);
 * mathlib for OCaml (http://raevnos.pennmush.org/code/mathlib/);
 * xmlm for OCaml (http://erratique.ch/software/xmlm);
+* curl (http://curl.haxx.se/) (not a library, just /usr/bin/curl).
 
 Then simply run
 
