@@ -159,11 +159,6 @@ type tile = {
   file: string;
 }
 
-let command_or_die cmd =
-  match Sys.command cmd with
-  | 0 -> ()
-  | code -> eprintf "%S failed with exit code %d\n%!" cmd code; exit 1
-
 open Arg
 
 let () =
@@ -192,6 +187,20 @@ let () =
   let start_icon = basedir ^ "/../share/gpxer/pin-icon-start.png" in
   let end_icon = basedir ^ "/../share/gpxer/pin-icon-end.png" in
   let shadow = basedir ^ "/../share/gpxer/pin-shadow.png" in
+
+  let tmp_dir =
+    Random.self_init ();
+    let rand = Random.int 1073741823 in
+    sprintf "/tmp/gpxer-%d" rand in
+
+  let die code =
+    printf "removing temporary directory %s\n%!" tmp_dir;
+    exit code in
+
+  let command_or_die cmd =
+    match Sys.command cmd with
+    | 0 -> ()
+    | code -> eprintf "%S failed with exit code %d\n%!" cmd code; die 1 in
 
   printf "parsing gpx file\n%!";
   let gpx = gpx_of_channel stdin in
@@ -231,10 +240,6 @@ let () =
     let _, str = ExtLib.String.replace ~str ~sub:"{x}" ~by:(string_of_int x   ) in
     let _, str = ExtLib.String.replace ~str ~sub:"{y}" ~by:(string_of_int y   ) in
     str in
-  let tmp_dir =
-    Random.self_init ();
-    let rand = Random.int 1073741823 in
-    sprintf "/tmp/gpxer-%d" rand in
   let tiles =
     let rec xloop x acc =
       let rec yloop y acc =
