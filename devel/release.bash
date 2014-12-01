@@ -28,16 +28,18 @@ function release_build {
 
   make -s -j4 bin/${name} || exit 1
   mkdir -p $byte
-  mv bin/${name} $byte || exit 1
+  mkdir -p $byte/bin
+  mv bin/${name} $byte/bin || exit 1
   cp -r share $byte
   tar -cf $byte.tar.gz $byte || exit 1
   rm -r $byte
 
   make -s -j4 bin/${name}.opt || exit 1
   mkdir -p $opt
+  mkdir -p $opt/bin
   strip --strip-unneeded bin/${name}.opt || exit 1
-  mv bin/${name}.opt $opt || exit 1
-  cp -r share $byte
+  mv bin/${name}.opt $opt/bin || exit 1
+  cp -r share $opt
   tar -cf $opt.tar.gz $opt || exit 1
   make -s clean || exit 1
   rm -r $opt
