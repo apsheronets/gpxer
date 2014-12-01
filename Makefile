@@ -22,9 +22,11 @@ OPT = bin/$(NAME).opt
 all: $(BYTE) $(OPT)
 
 $(BYTE): $(OBJS)
+	mkdir -p bin
 	$(CAMLC) -linkpkg -o $@ $^
 
 $(OPT): $(OPTOBJS)
+	mkdir -p bin
 	$(CAMLOPT) -linkpkg -o $@ $^
 
 .SUFFIXES:
