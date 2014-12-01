@@ -24,7 +24,7 @@ all: $(BYTE) $(OPT)
 $(BYTE): $(OBJS)
 	$(CAMLC) -linkpkg -o $@ $^
 
-$(OPT): $(OPTBJS)
+$(OPT): $(OPTOBJS)
 	$(CAMLOPT) -linkpkg -o $@ $^
 
 .SUFFIXES:
@@ -40,7 +40,8 @@ $(OPT): $(OPTBJS)
 install: $(BYTE) $(OPT)
 	install -m 755 $(BYTE) $(PREFIX)/$(BYTE)
 	install -m 755 $(OPT)  $(PREFIX)/$(OPT)
-	install -m 755 share/$(NAME) $(PREFIX)/share/$(NAME)
+	install -d share/$(NAME) $(PREFIX)/share/$(NAME)
+	install -m 644 share/$(NAME)/* $(PREFIX)/share/$(NAME)
 
 uninstall:
 	rm $(PREFIX)/$(BYTE)

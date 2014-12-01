@@ -181,7 +181,7 @@ let () =
   let out = !out in
   let osm_base_url = !osm_base_url in
 
-  let basedir = Filename.dirname (Sys.argv.(0)) in
+  let basedir = Filename.dirname (Sys.executable_name) in
   let start_icon = basedir ^ "/../share/gpxer/pin-icon-start.png" in
   let end_icon = basedir ^ "/../share/gpxer/pin-icon-end.png" in
   let shadow = basedir ^ "/../share/gpxer/pin-shadow.png" in
