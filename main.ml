@@ -159,6 +159,11 @@ type tile = {
   file: string;
 }
 
+let command_or_die cmd =
+  match Sys.command cmd with
+  | 0 -> ()
+  | code -> eprintf "%S failed with exit code %d\n%!" cmd code; exit 1
+
 open Arg
 
 let () =
@@ -239,9 +244,9 @@ let () =
           let dir = sprintf "%s/%d/%d" tmp_dir zoom x in
           let file = sprintf "%s/%d.png" dir y in
           let url = osm_url zoom x y in
-          ignore (Sys.command (sprintf "mkdir -p %s" dir));
+          command_or_die (sprintf "mkdir -p %s" dir);
           printf "downloading tile %s\n%!" url;
-          ignore (Sys.command (sprintf "curl -s %s -o %s" url file));
+          command_or_die (sprintf "curl -s %s -o %s" url file);
           let tile = { file; x; y } in
           yloop (succ y) (tile :: acc) in
       if x > right_tile
@@ -258,7 +263,7 @@ let () =
     let y = (tile.y * tile_height) - int_of_float (floor canvas_top ) in
     Magick.Imper.composite_image image tile_image ~compose:Magick.Over ~x ~y ());
   printf "removing temporary directory %s\n%!" tmp_dir;
-  ignore (Sys.command (sprintf "rm -r %s" tmp_dir));
+  command_or_die (sprintf "rm -r %s" tmp_dir);
   let start_icon  = Magick.read_image ~filename:start_icon in
   let end_icon    = Magick.read_image ~filename:end_icon   in
   let shadow      = Magick.read_image ~filename:shadow     in
