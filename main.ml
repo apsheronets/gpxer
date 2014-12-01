@@ -169,12 +169,14 @@ let () =
   let canvas_height = ref 600 in
   let canvas_width = ref 800 in
   let osm_base_url = ref "http://{s}.tile.opencyclemap.org/landscape/{z}/{x}/{y}.png" in
+  let horizontal_padding  = ref 0 in
   let source = ref "" in
   let l = [
     "-o", Set_string out, sprintf "FILE\twrite output to <file>; default is %S" !out;
     "-height", Set_int canvas_height, sprintf "\timage height; default is %d" !canvas_height;
     "-width", Set_int canvas_width, sprintf "\timage width; default is %d" !canvas_width;
     "-url", Set_string osm_base_url, sprintf "\t\tURL to download tiles from;\n\t\tdefault is %s" !osm_base_url;
+    "-horizontal-padding",  Set_int horizontal_padding,  sprintf "\tCSS-like property for canvas; default is %d" !horizontal_padding;
   ] in
   Arg.parse l (fun a -> source := a) help;
 
@@ -182,6 +184,7 @@ let () =
   let canvas_width  = !canvas_width  in
   let out = !out in
   let osm_base_url = !osm_base_url in
+  let horizontal_padding = !horizontal_padding in
 
   let basedir = Filename.dirname (Sys.executable_name) in
   let start_icon = basedir ^ "/../share/gpxer/pin-icon-start.png" in
@@ -215,7 +218,7 @@ let () =
       max_lat
       min_lon
       max_lon
-      canvas_width
+      (canvas_width - horizontal_padding)
       canvas_height in
   let gpx_height = gpx_height_in_pixels zoom min_lat max_lat in
   printf "gpx height: %f\n" gpx_height;
