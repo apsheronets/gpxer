@@ -1,0 +1,30 @@
+Gpxer - GPX to PNG tool
+=======================
+
+Building:
+----------
+
+First you need to get:
+
+* an OCaml compiler >= 3.11 (http://caml.inria.fr/ocaml);
+* GNU Make (http://www.gnu.org/software/make/);
+* findlib which provide ocamlfind command
+  (http://projects.camlcity.org/projects/findlib.html);
+* extlib for OCaml (http://code.google.com/p/ocaml-extlib/);
+* imagemagick for OCaml (https://github.com/besport/ocaml-imagemagick);
+* mathlib for OCaml (http://raevnos.pennmush.org/code/mathlib/);
+* xmlm for OCaml (http://erratique.ch/software/xmlm);
+
+Then simply run
+
+> make
+
+Installation:
+--------------
+
+> sudo make install
+
+Usage:
+-------
+
+> gpxer -h
