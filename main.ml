@@ -174,6 +174,7 @@ let () =
   let canvas_width = ref 800 in
   let osm_base_url = ref "http://{s}.tile.opencyclemap.org/landscape/{z}/{x}/{y}.png" in
   let horizontal_padding  = ref 0 in
+  let compress = ref false in
   let source = ref "" in
   let l = [
     "-o", Set_string out, sprintf "FILE\twrite output to <file>; default is %S" !out;
@@ -181,6 +182,7 @@ let () =
     "-width", Set_int canvas_width, sprintf "\timage width; default is %d" !canvas_width;
     "-url", Set_string osm_base_url, sprintf "\t\tURL to download tiles from;\n\t\tdefault is %s" !osm_base_url;
     "-horizontal-padding",  Set_int horizontal_padding,  sprintf "\tCSS-like property for canvas; default is %d" !horizontal_padding;
+    "-compress", Set compress, "\t\tebnable aggressive compresion"
   ] in
   Arg.parse l (fun a -> source := a) help;
 
@@ -268,7 +270,6 @@ let () =
         xloop (succ x) (List.rev_append column acc) in
     xloop left_tile [] in
   let image = Magick.get_canvas ~width:canvas_width ~height:canvas_height ~color:"#000000" in
-  Magick.Imper.set_image_type image Magick.Palette;
   tiles |> List.iter (fun tile ->
     let tile_image = Magick.read_image ~filename:tile.file in
     let x = (tile.x * tile_width)  - int_of_float (floor canvas_left) in
@@ -321,6 +322,16 @@ let () =
               ()
           | _ -> ()); (* FIXME in the future*)
   printf "writing to %s\n%!" out;
+
+  if !compress then begin
+    (* actually I have no idea what I'm doing *)
+    (* but this works *)
+    Magick.Imper.set_image_type image Magick.Palette;
+    Magick.Imper.set_image_colors image 0;
+    Magick.Imper.set_compression_quality image 0;
+    Magick.Imper.strip_image image;
+  end;
+
   Magick.write_image image out;
   ()
 
