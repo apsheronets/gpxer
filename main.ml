@@ -55,6 +55,8 @@ let print_gpx =
 let tile_width = 256
 let tile_height = 256
 
+let maximum_zoom = 18
+
 let calc_border init f (gpx:gpx) : float =
   let r = ref init in
   List.iter
@@ -82,28 +84,48 @@ let max_lon =
 let pi = 3.14159265358979323846
 let log2 x = log x /. log 2.0 (* thanks to aleksey, I'm a dumb-ass *)
 
+let distance (lat1, lon1) (lat2, lon2) =
+  let r = 6378137. in (* radius of earth *)
+  let pi = 4.0 *. atan 1.0 in
+  let dlat = (lat2 -. lat1) *. pi /. 180.
+  and dlon = (lon2 -. lon1) *. pi /. 180. in
+  let a = (sin (dlat /. 2.) ** 2.) +.
+    cos (lat1 *. pi /. 180.) *. cos (lat2 *. pi /. 180.) *.
+    (sin (dlon /. 2.) ** 2.) in
+  let c = 2. *. atan2 (sqrt a) (sqrt (1. -. a)) in
+  r *. c
+
 let calc_zoom lat_min lat_max lon_min lon_max width height =
-  let zoom_to_fit_width = int_of_float (floor (log2(float_of_int (360 * width) /. (float_of_int tile_width *. (lon_max -. lon_min))))) in
-  printf "calculated maximum zoom to fit width:  %d\n" zoom_to_fit_width;
-  let zoom_to_fit_height =
-    int_of_float @@
-    log2 ((pi *. float_of_int height) /. ((float_of_int tile_height) *. (log (tan (lat_max *. (pi /. 180.)) +. (1. /. cos (lat_max *. (pi /. 180.)))) -. log (tan (lat_min *. (pi /. 180.)) +. (1. /. cos (lat_min *. (pi /. 180.))))))) +. 1.0 in
-  printf "calculated maximum zoom to fit height: %d\n" zoom_to_fit_height;
-  let zoom =
-    if zoom_to_fit_width < zoom_to_fit_height
-    then zoom_to_fit_width
-    else zoom_to_fit_height in
-  printf "calculated minimum zoom: %d\n" zoom;
-  if zoom > 18
-  then (* in case we got one meter GPX *)
-    (printf "zoom is too high, choose 18\n";
-    18)
-  else if zoom < 0
-  then
-    (printf "zoom is too low, choose 0";
-    0)
-  else
-    zoom
+  (* our calculations fuck up when we got a very small
+   * (like one-point) track, so lets do a simple check here *)
+  let distance = distance (lat_min, lon_min) (lat_max, lon_max) in
+  if distance < 1.
+  then begin
+    printf "we got %f meters GPX, choose maximum zoom level (%d)\n" distance maximum_zoom;
+    maximum_zoom
+  end else begin
+    let zoom_to_fit_width = int_of_float (floor (log2(float_of_int (360 * width) /. (float_of_int tile_width *. (lon_max -. lon_min))))) in
+    printf "calculated maximum zoom to fit width:  %d\n" zoom_to_fit_width;
+    let zoom_to_fit_height =
+      int_of_float @@
+      log2 ((pi *. float_of_int height) /. ((float_of_int tile_height) *. (log (tan (lat_max *. (pi /. 180.)) +. (1. /. cos (lat_max *. (pi /. 180.)))) -. log (tan (lat_min *. (pi /. 180.)) +. (1. /. cos (lat_min *. (pi /. 180.))))))) +. 1.0 in
+    printf "calculated maximum zoom to fit height: %d\n" zoom_to_fit_height;
+    let zoom =
+      if zoom_to_fit_width < zoom_to_fit_height
+      then zoom_to_fit_width
+      else zoom_to_fit_height in
+    printf "calculated minimum zoom: %d\n" zoom;
+    if zoom > maximum_zoom
+    then begin (* in case we got one meter GPX *)
+      printf "zoom is too high, choose %d\n" maximum_zoom;
+      maximum_zoom
+    end else if zoom < 0
+    then
+      (printf "zoom is too low, choose 0";
+      0)
+    else
+      zoom
+  end
 
 let x_tile_of_lon zoom lon =
   int_of_float (((lon +. 180.) /. 360.) *. (2. ** float_of_int zoom))
