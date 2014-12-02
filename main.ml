@@ -315,8 +315,8 @@ let () =
                 travel (lat1, lon1) t in
           match trkseg with
           | first::rest ->
-              draw_icon start_icon first;
               let last = travel first rest in
+              draw_icon start_icon first;
               draw_icon end_icon last;
               ()
           | _ -> ()); (* FIXME in the future*)
