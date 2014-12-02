@@ -282,7 +282,7 @@ let () =
           let url = osm_url zoom x y in
           command_or_die (sprintf "mkdir -p %s" dir);
           printf "downloading tile %s\n%!" url;
-          command_or_die (sprintf "curl -s %s -o %s" url file);
+          command_or_die (sprintf "curl -f -s %s -o %s" url file);
           let tile = { file; x; y } in
           yloop (succ y) (tile :: acc) in
       if x > right_tile
