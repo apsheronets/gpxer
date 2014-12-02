@@ -18,8 +18,10 @@ OPTOBJS = $(FILES:.ml=.cmx)
 
 BYTE = bin/$(NAME)
 OPT = bin/$(NAME).opt
+STATIC = bin/$(NAME).static
 
 all: $(BYTE) $(OPT)
+static: $(STATIC)
 
 $(BYTE): $(OBJS)
 	mkdir -p bin
@@ -28,6 +30,10 @@ $(BYTE): $(OBJS)
 $(OPT): $(OPTOBJS)
 	mkdir -p bin
 	$(CAMLOPT) -linkpkg -o $@ $^
+
+$(STATIC): $(OPTOBJS)
+	mkdir -p bin
+	$(CAMLOPT) -linkpkg -noautolink -cclib '-Wl,-Bstatic -limagemagick_stubs -Wl,-Bdynamic -lMagickCore -lbigarray -lunix -lz' -o $@ $^
 
 .SUFFIXES:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
@@ -53,7 +59,7 @@ uninstall:
 clean:
 	-rm -f *.cm[ioxa] *.cmx[as] *.o *.a *~
 	-rm -f .depend
-	-rm -f $(BYTE) $(OPT)
+	-rm -f $(BYTE) $(OPT) $(STATIC)
 
 depend: .depend
 

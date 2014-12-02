@@ -13,8 +13,7 @@ tar_dst=$HOME/htdocs/src/$name
 chroot_dir=/home/komar/chroot/wheezy-x86
 chroot_dist_dir=/home/komar/
 user=komar
-byte=$name-bytecode-$version
-opt=$name-bin-x86-$version
+static=$name-bin-static-x86-$version
 
 function release_sources {
   git archive --format tar.gz --prefix $name-$version HEAD > $tar || exit 1
@@ -26,23 +25,15 @@ function release_build {
   cd $chroot_dist_dir/$name || exit 1
   make -s clean || exit 1
 
-  make -s -j4 bin/${name} || exit 1
-  mkdir -p $byte
-  mkdir -p $byte/bin
-  mv bin/${name} $byte/bin || exit 1
-  cp -r share $byte
-  tar -cf $byte.tar.gz $byte || exit 1
-  rm -r $byte
-
-  make -s -j4 bin/${name}.opt || exit 1
-  mkdir -p $opt
-  mkdir -p $opt/bin
-  strip --strip-unneeded bin/${name}.opt || exit 1
-  mv bin/${name}.opt $opt/bin || exit 1
-  cp -r share $opt
-  tar -cf $opt.tar.gz $opt || exit 1
+  make -s -j4 bin/${name}.static || exit 1
+  mkdir -p $static
+  mkdir -p $static/bin
+  strip --strip-unneeded bin/${name}.static || exit 1
+  mv bin/${name}.static $static/bin || exit 1
+  cp -r share $static
+  tar -cf $static.tar.gz $static || exit 1
   make -s clean || exit 1
-  rm -r $opt
+  rm -r $static
 
   make -s clean || exit 1
 
@@ -60,8 +51,7 @@ case "$1" in
     cd $basedir || exit 1
     chmod +x $chroot_dir/$chroot_dist_dir/$name/devel/release.bash || exit 1
     sudo chroot $chroot_dir $chroot_dist_dir/$name/devel/release.bash build-root;
-    mkdir -p $tar_dst/builded/;
-    cp $chroot_dir/$chroot_dist_dir/$name/$byte.tar.gz $tar_dst/builded/;
-    cp $chroot_dir/$chroot_dist_dir/$name/$opt.tar.gz $tar_dst/builded/;;
+    mkdir -p $tar_dst/../../builds/$name/;
+    cp $chroot_dir/$chroot_dist_dir/$name/$static.tar.gz $tar_dst/../../builds/$name/;;
 esac
 
