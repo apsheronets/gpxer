@@ -80,7 +80,7 @@ let max_lon =
 
 (* some math *)
 let pi = 3.14159265358979323846
-let log2 x = log x /. log 2.0
+let log2 x = log x /. log 2.0 (* thanks to aleksey, I'm a dumb-ass *)
 
 let calc_zoom lat_min lat_max lon_min lon_max width height =
   let zoom_to_fit_width = int_of_float (floor (log2(float_of_int (360 * width) /. (float_of_int tile_width *. (lon_max -. lon_min))))) in
