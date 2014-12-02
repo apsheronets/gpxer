@@ -78,12 +78,16 @@ let max_lat =
 let max_lon =
   calc_border (-666.) (fun (_, lon) r -> if !r < lon then r := lon)
 
+(* some math *)
+let pi = 3.14159265358979323846
+let log2 x = log x /. log 2.0
+
 let calc_zoom lat_min lat_max lon_min lon_max width height =
-  let zoom_to_fit_width = int_of_float (floor (Math.log2(float_of_int (360 * width) /. (float_of_int tile_width *. (lon_max -. lon_min))))) in
+  let zoom_to_fit_width = int_of_float (floor (log2(float_of_int (360 * width) /. (float_of_int tile_width *. (lon_max -. lon_min))))) in
   printf "calculated maximum zoom to fit width:  %d\n" zoom_to_fit_width;
   let zoom_to_fit_height =
     int_of_float @@
-    Math.log2 ((Constant.pi *. float_of_int height) /. ((float_of_int tile_height) *. (log (tan (lat_max *. (Constant.pi /. 180.)) +. (1. /. cos (lat_max *. (Constant.pi /. 180.)))) -. log (tan (lat_min *. (Constant.pi /. 180.)) +. (1. /. cos (lat_min *. (Constant.pi /. 180.))))))) +. 1.0 in
+    log2 ((pi *. float_of_int height) /. ((float_of_int tile_height) *. (log (tan (lat_max *. (pi /. 180.)) +. (1. /. cos (lat_max *. (pi /. 180.)))) -. log (tan (lat_min *. (pi /. 180.)) +. (1. /. cos (lat_min *. (pi /. 180.))))))) +. 1.0 in
   printf "calculated maximum zoom to fit height: %d\n" zoom_to_fit_height;
   let zoom =
     if zoom_to_fit_width < zoom_to_fit_height
@@ -109,11 +113,11 @@ let x_pixel_of_lon zoom lon =
   ((lon +. 180.) /. 360.) *. (2. ** float_of_int zoom) *. float_of_int tile_width
 
 let y_tile_of_lat zoom lat =
-  int_of_float ((1.0 -. ((log (tan (lat *. (Constant.pi /. 180.)) +. (1. /. cos (lat *. (Constant.pi /. 180.))))) /. Constant.pi)) *. (2. ** float_of_int (zoom - 1)))
+  int_of_float ((1.0 -. ((log (tan (lat *. (pi /. 180.)) +. (1. /. cos (lat *. (pi /. 180.))))) /. pi)) *. (2. ** float_of_int (zoom - 1)))
 
 (* on global map *)
 let y_pixel_of_lat zoom lat =
-  (1.0 -. ((log (tan (lat *. (Constant.pi /. 180.)) +. (1. /. cos (lat *. (Constant.pi /. 180.))))) /. Constant.pi)) *. (2. ** float_of_int (zoom - 1)) *. float_of_int tile_height
+  (1.0 -. ((log (tan (lat *. (pi /. 180.)) +. (1. /. cos (lat *. (pi /. 180.))))) /. pi)) *. (2. ** float_of_int (zoom - 1)) *. float_of_int tile_height
 
 let gpx_height_in_pixels zoom min_lat max_lat =
   let top    = y_pixel_of_lat zoom max_lat in

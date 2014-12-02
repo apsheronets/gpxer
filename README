@@ -12,7 +12,6 @@ First you need to get:
   (http://projects.camlcity.org/projects/findlib.html);
 * extlib for OCaml (http://code.google.com/p/ocaml-extlib/);
 * imagemagick for OCaml (https://github.com/besport/ocaml-imagemagick);
-* mathlib for OCaml (http://raevnos.pennmush.org/code/mathlib/);
 * xmlm for OCaml (http://erratique.ch/software/xmlm);
 * curl (http://curl.haxx.se/) (not a library, just /usr/bin/curl).
 
