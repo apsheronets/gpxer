@@ -186,6 +186,7 @@ type tile = {
 }
 
 open Arg
+open Lwt
 
 let () =
   let help =
@@ -233,6 +234,15 @@ let () =
     | 0 -> ()
     | code -> eprintf "%S failed with exit code %d\n%!" cmd code; die 1 in
 
+  let connections = Lwt_pool.create 10 (fun () -> return ()) in
+  let connect f = Lwt_pool.use connections f in
+
+  let lwt_command_or_die cmd =
+    Lwt_process.shell cmd |>
+    Lwt_process.exec >|= function
+    | Unix.WEXITED 0 -> ()
+    | _ -> eprintf "%S failed\n%!" cmd; die 1 in
+
   printf "parsing gpx file\n%!";
   let gpx = gpx_of_channel stdin in
   (*print_gpx gpx;*)
@@ -272,23 +282,25 @@ let () =
     let _, str = ExtLib.String.replace ~str ~sub:"{y}" ~by:(string_of_int y   ) in
     str in
   let tiles =
+    Lwt_main.run @@
     let rec xloop x acc =
       let rec yloop y acc =
         if y > bottom_tile
-        then acc
+        then return acc
         else
           let dir = sprintf "%s/%d/%d" tmp_dir zoom x in
           let file = sprintf "%s/%d.png" dir y in
           let url = osm_url zoom x y in
           command_or_die (sprintf "mkdir -p %s" dir);
-          printf "downloading tile %s\n%!" url;
-          command_or_die (sprintf "curl -f -s %s -o %s" url file);
+          connect (fun () ->
+            Lwt_io.printf "downloading tile %s\n%!" url >>= fun () ->
+            lwt_command_or_die (sprintf "curl -f -s %s -o %s" url file)) >>= fun () ->
           let tile = { file; x; y } in
           yloop (succ y) (tile :: acc) in
       if x > right_tile
-      then acc
+      then return acc
       else
-        let column = yloop top_tile [] in
+        yloop top_tile [] >>= fun column ->
         xloop (succ x) (List.rev_append column acc) in
     xloop left_tile [] in
   let image = Magick.get_canvas ~width:canvas_width ~height:canvas_height ~color:"#000000" in

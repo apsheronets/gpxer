@@ -1,10 +1,10 @@
-PACKAGES = extlib,magick,xmlm
+PACKAGES = extlib,magick,xmlm,lwt,lwt.unix,lwt.extra
 FILES = xmlm_shit.ml main.ml
 
 NAME = gpxer
 VERSION := $(shell head -n 1 VERSION)
-CAMLC   = ocamlfind ocamlc   $(LIB)
-CAMLOPT = ocamlfind ocamlopt $(LIB)
+CAMLC   = ocamlfind ocamlc   -thread $(LIB)
+CAMLOPT = ocamlfind ocamlopt -thread $(LIB)
 CAMLDEP = ocamlfind ocamldep
 LIB = -package $(PACKAGES)
 PP =
