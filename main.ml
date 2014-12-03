@@ -271,10 +271,11 @@ let () =
     let _, str = ExtLib.String.replace ~str ~sub:"{x}" ~by:(string_of_int x   ) in
     let _, str = ExtLib.String.replace ~str ~sub:"{y}" ~by:(string_of_int y   ) in
     str in
+  let max_tile_available = int_of_float (2. ** float_of_int zoom) - 1 in
   let tiles =
     let rec xloop x acc =
       let rec yloop y acc =
-        if y > bottom_tile
+        if y > bottom_tile || y > max_tile_available
         then acc
         else
           let dir = sprintf "%s/%d/%d" tmp_dir zoom x in
@@ -285,13 +286,15 @@ let () =
           command_or_die (sprintf "curl -f -s %s -o %s" url file);
           let tile = { file; x; y } in
           yloop (succ y) (tile :: acc) in
-      if x > right_tile
+      if x > right_tile || x > max_tile_available
       then acc
       else
+        let top_tile = if top_tile >= 0 then top_tile else 0 in
         let column = yloop top_tile [] in
         xloop (succ x) (List.rev_append column acc) in
+    let left_tile = if left_tile >= 0 then left_tile else 0 in
     xloop left_tile [] in
-  let image = Magick.get_canvas ~width:canvas_width ~height:canvas_height ~color:"#000000" in
+  let image = Magick.get_canvas ~width:canvas_width ~height:canvas_height ~color:"#FFFFFF" in
   tiles |> List.iter (fun tile ->
     let tile_image = Magick.read_image ~filename:tile.file in
     let x = (tile.x * tile_width)  - int_of_float (floor canvas_left) in
