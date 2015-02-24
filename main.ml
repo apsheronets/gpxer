@@ -204,7 +204,7 @@ let () =
     "-width", Set_int canvas_width, sprintf "\timage width; default is %d" !canvas_width;
     "-url", Set_string osm_base_url, sprintf "\t\tURL to download tiles from;\n\t\tdefault is %s" !osm_base_url;
     "-horizontal-padding",  Set_int horizontal_padding,  sprintf "\tCSS-like property for canvas; default is %d" !horizontal_padding;
-    "-compress", Set compress, "\t\tebnable aggressive compresion"
+    "-compress", Set compress, "\t\tenable aggressive compresion"
   ] in
   Arg.parse l (fun a -> source := a) help;
 
