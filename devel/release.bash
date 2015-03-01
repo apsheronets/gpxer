@@ -16,7 +16,7 @@ user=komar
 static=$name-bin-static-x86-$version
 
 function release_sources {
-  git archive --format tar.gz --prefix $name-$version HEAD > $tar || exit 1
+  git archive --format tar.gz --prefix $name-$version/ HEAD > $tar || exit 1
   cp $tar $tar_dst || exit 1
   make -s clean || exit 1
 }
