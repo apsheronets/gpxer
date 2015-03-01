@@ -185,6 +185,36 @@ type tile = {
   file: string;
 }
 
+(* since imagemagick can't draw polylines of > ~500 coordinates *)
+let split_line a =
+  (*eprintf "total length: %d\n%!" (Array.length a);*)
+  if Array.length a <= 400
+  then [|a|]
+  else
+    let size = int_of_float (ceil ((float_of_int (Array.length a)) /. 400.)) in
+    let r = Array.make size [||] in
+    for i = 0 to (size-1) do
+      let start = if i = 0 then 0 else (i * 400) - 1 in
+      let len =
+        let len =
+          if (i + 1) * 400 > Array.length a
+          then
+            let len = Array.length a mod 400 in
+            if len = 0
+            then 400
+            else len
+          else 400 in
+        if i = 0
+        then len
+        else len + 1 in
+      (*eprintf "start: %d len: %d\n%!" start len;*)
+      r.(i) <- Array.sub a start len
+    done;
+    r
+
+let alpha_of_fraction f = 65535 - int_of_float (65535. *. f)
+let add_alpha_to_color (r,g,b,_) a = (r,g,b,a)
+
 open Arg
 
 let () =
@@ -314,38 +344,37 @@ let () =
     let y = y - icon_height + 5 (* a magic five *) in
     Magick.Imper.composite_image image icon ~compose:Magick.Over ~x ~y ();
     Magick.Imper.composite_image image shadow ~compose:Magick.Over ~x ~y () in
+  let line_color =
+    (*add_alpha_to_color (Magick.Imper.color_of_string "#4e5fcd") (alpha_of_fraction 1.0) in*)
+    Magick.Imper.color_of_string "#4e5fcd" in
   gpx |>
     List.iter @@
       List.iter
         (fun trkseg ->
-          let rec travel (lat0, lon0) rest =
-            match rest with
-            | [] -> (lat0, lon0);
-            | (lat1, lon1)::t ->
-                let x0 = int_of_float @@ x_pixel_of_lon zoom lon0 -. canvas_left in
-                let x1 = int_of_float @@ x_pixel_of_lon zoom lon1 -. canvas_left in
-                let y0 = int_of_float @@ y_pixel_of_lat zoom lat0 -. canvas_top in
-                let y1 = int_of_float @@ y_pixel_of_lat zoom lat1 -. canvas_top in
-                Magick.Imper.draw_line
+          match trkseg with
+          | first::_ ->
+              let coords =
+                List.map
+                  (fun (lat, lon) ->
+                    int_of_float @@ x_pixel_of_lon zoom lon -. canvas_left,
+                    int_of_float @@ y_pixel_of_lat zoom lat -. canvas_top)
+                  trkseg in
+              let coords = Array.of_list coords in
+              split_line coords |> Array.iter (fun coords ->
+                Magick.Imper.draw_polyline
                   image
-                  ~x0
-                  ~x1
-                  ~y0
-                  ~y1
-                  ~fill_color:(Magick.Imper.color_of_string "#4e5fcd")
-                  ~stroke_color:(Magick.Imper.color_of_string "#4e5fcd")
+                  ~coords
+                  ~stroke_color:line_color
                   ~stroke_width:4.0
                   ~stroke_antialias:Magick.MagickTrue
                   ~line_cap:Magick.Imper.RoundCap
+                  ~line_join:Magick.Imper.RoundJoin
                   ();
-                travel (lat1, lon1) t in
-          match trkseg with
-          | first::rest ->
-              let last = travel first rest in
-              draw_icon start_icon first;
-              draw_icon end_icon last;
-              ()
-          | _ -> ()); (* FIXME in the future*)
+                let last = ExtLib.List.last trkseg in
+                draw_icon start_icon first;
+                draw_icon end_icon last;
+                ())
+          | _ -> ());
   printf "writing to %s\n%!" out;
 
   if !compress then begin
