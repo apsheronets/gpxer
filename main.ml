@@ -370,10 +370,10 @@ let () =
                   ~line_cap:Magick.Imper.RoundCap
                   ~line_join:Magick.Imper.RoundJoin
                   ();
-                let last = ExtLib.List.last trkseg in
-                draw_icon start_icon first;
-                draw_icon end_icon last;
-                ())
+                ());
+              let last = ExtLib.List.last trkseg in
+              draw_icon start_icon first;
+              draw_icon end_icon last;
           | _ -> ());
   printf "writing to %s\n%!" out;
 
