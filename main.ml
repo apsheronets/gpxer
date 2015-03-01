@@ -353,14 +353,14 @@ let () =
         (fun trkseg ->
           match trkseg with
           | first::_ ->
-              let coords =
-                List.map
-                  (fun (lat, lon) ->
-                    int_of_float @@ x_pixel_of_lon zoom lon -. canvas_left,
-                    int_of_float @@ y_pixel_of_lat zoom lat -. canvas_top)
-                  trkseg in
-              let coords = Array.of_list coords in
-              split_line coords |> Array.iter (fun coords ->
+              trkseg |>
+              List.map
+                (fun (lat, lon) ->
+                  int_of_float @@ x_pixel_of_lon zoom lon -. canvas_left,
+                  int_of_float @@ y_pixel_of_lat zoom lat -. canvas_top) |>
+              Array.of_list |>
+              split_line |>
+              Array.iter (fun coords ->
                 Magick.Imper.draw_polyline
                   image
                   ~coords
@@ -369,12 +369,11 @@ let () =
                   ~stroke_antialias:Magick.MagickTrue
                   ~line_cap:Magick.Imper.RoundCap
                   ~line_join:Magick.Imper.RoundJoin
-                  ();
-                ());
+                  ());
               let last = ExtLib.List.last trkseg in
               draw_icon start_icon first;
               draw_icon end_icon last;
-          | _ -> ());
+          | [] -> ());
   printf "writing to %s\n%!" out;
 
   if !compress then begin
