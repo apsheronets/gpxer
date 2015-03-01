@@ -345,8 +345,7 @@ let () =
     Magick.Imper.composite_image image icon ~compose:Magick.Over ~x ~y ();
     Magick.Imper.composite_image image shadow ~compose:Magick.Over ~x ~y () in
   let line_color =
-    (*add_alpha_to_color (Magick.Imper.color_of_string "#4e5fcd") (alpha_of_fraction 1.0) in*)
-    Magick.Imper.color_of_string "#4e5fcd" in
+    add_alpha_to_color (Magick.Imper.color_of_string "#4400FF") (alpha_of_fraction 0.7) in
   gpx |>
     List.iter @@
       List.iter
