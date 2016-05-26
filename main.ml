@@ -99,7 +99,7 @@ let calc_zoom lat_min lat_max lon_min lon_max width height =
   (* our calculations fuck up when we got a very small
    * (like one-point) track, so lets do a simple check here *)
   let distance = distance (lat_min, lon_min) (lat_max, lon_max) in
-  if distance < 1.
+  if distance < 20.
   then begin
     printf "we got %f meters GPX, choose maximum zoom level (%d)\n" distance maximum_zoom;
     maximum_zoom
@@ -226,7 +226,9 @@ let () =
   let canvas_width = ref 800 in
   let osm_base_url = ref "http://{s}.tile.opencyclemap.org/landscape/{z}/{x}/{y}.png" in
   let horizontal_padding  = ref 0 in
+  let vertical_padding    = ref 0 in
   let compress = ref false in
+  let nomarkers = ref false in
   let source = ref "" in
   let l = [
     "-o", Set_string out, sprintf "FILE\twrite output to <file>; default is %S" !out;
@@ -234,7 +236,9 @@ let () =
     "-width", Set_int canvas_width, sprintf "\timage width; default is %d" !canvas_width;
     "-url", Set_string osm_base_url, sprintf "\t\tURL to download tiles from;\n\t\tdefault is %s" !osm_base_url;
     "-horizontal-padding",  Set_int horizontal_padding,  sprintf "\tCSS-like property for canvas; default is %d" !horizontal_padding;
-    "-compress", Set compress, "\t\tenable aggressive compresion"
+    "-vertical-padding",  Set_int vertical_padding,  sprintf "\tCSS-like property for canvas; default is %d" !vertical_padding;
+    "-compress", Set compress, "\t\tenable aggressive compresion";
+    "-nomarkers", Set nomarkers, "\t\tdo not place markers at the beginning and at the end";
   ] in
   Arg.parse l (fun a -> source := a) help;
 
@@ -243,6 +247,7 @@ let () =
   let out = !out in
   let osm_base_url = !osm_base_url in
   let horizontal_padding = !horizontal_padding in
+  let vertical_padding = !vertical_padding in
 
   let basedir = Filename.dirname (Sys.executable_name) in
   let start_icon = basedir ^ "/../share/gpxer/pin-icon-start.png" in
@@ -277,7 +282,7 @@ let () =
       min_lon
       max_lon
       (canvas_width - horizontal_padding)
-      canvas_height in
+      (canvas_height - vertical_padding) in
   let gpx_height = gpx_height_in_pixels zoom min_lat max_lat in
   printf "gpx height: %f\n" gpx_height;
   let gpx_width  = gpx_width_in_pixels zoom min_lon max_lon in
@@ -369,16 +374,19 @@ let () =
                   ~line_cap:Magick.Imper.RoundCap
                   ~line_join:Magick.Imper.RoundJoin
                   ());
-              let last = ExtLib.List.last trkseg in
-              draw_icon start_icon first;
-              draw_icon end_icon last;
+              if not !nomarkers
+              then begin
+                let last = ExtLib.List.last trkseg in
+                draw_icon start_icon first;
+                draw_icon end_icon last;
+              end
           | [] -> ());
   printf "writing to %s\n%!" out;
 
   if !compress then begin
     (* actually I have no idea what I'm doing *)
     (* but this works *)
-    Magick.Imper.set_image_type image Magick.Palette;
+    Magick.Imper.set_image_type image Magick.TrueColor;
     Magick.Imper.set_image_colors image 0;
     Magick.Imper.set_compression_quality image 0;
     Magick.Imper.strip_image image;
